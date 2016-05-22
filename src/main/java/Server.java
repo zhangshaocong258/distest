@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,6 +24,9 @@ public class Server {
         tasks.put("-", "n");
         tasks.put("*", "n");
         tasks.put("/", "n");
+        tasks.put("a²", "n");
+        tasks.put("√", "n");
+
     }
 
     //启动服务端
@@ -36,7 +38,7 @@ public class Server {
 
         public void run() {
             try {
-                serverSocket = new ServerSocket(30000);
+                serverSocket = new ServerSocket(30002);
                 start = true;
             } catch (BindException e) {
                 System.out.println("端口使用中...");
@@ -92,18 +94,22 @@ public class Server {
                 while (isConnected) {
                     dataFromClient = userClient.receiveData();
                     if (dataFromClient.equals("Ready")) {
+                        lock.lock();
                         try {
                             for (Map.Entry<String, String> entry : tasks.entrySet()) {
-                                System.out.println("key= " + entry.getKey() + " and value= " + entry.getValue());
+                                int count = 0;
+                                System.out.println("当前key= " + entry.getKey() + " and value= " + entry.getValue());
                                 if (entry.getValue().equals("n")) {
                                     userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
+                                    count ++;
+                                    break;
                                 }
-                                break;
                             }
                         } finally {
                             lock.unlock();
                         }
                     }
+                    System.out.println("执行完毕");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -125,8 +131,13 @@ public class Server {
         public void updateMap(String str){
             String DELIMITER = "\f\r";
             List<String> data = Arrays.asList(str.split(DELIMITER));
+            lock.lock();
             try {
                 tasks.put(data.get(0), data.get(1));
+                System.out.println("更新后");
+                for (Map.Entry<String, String> entry : tasks.entrySet()) {
+                    System.out.println("key= " + entry.getKey() + " and value= " + entry.getValue());
+                }
             } finally {
                 lock.unlock();
             }
@@ -138,6 +149,7 @@ public class Server {
                 while (isConnected) {
                     dataFromClient = userClient.receiveData();
                     updateMap(dataFromClient);
+
                 }
             } catch (IOException e) {
                 e.printStackTrace();

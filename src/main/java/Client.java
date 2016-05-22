@@ -1,9 +1,8 @@
-import com.sun.corba.se.spi.orb.Operation;
-
 import java.io.*;
 import java.net.*;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by zsc on 2016/5/20.
@@ -53,7 +52,8 @@ public class Client {
                     System.out.println("method " + getMethod(data));
                     myOperation = OperationFactory.CreateOperation(getMethod(data));
                     clientInit.sendResult(buildResult(getMethod(data)));
-                    Thread.sleep(5000);
+                    Random ra =new Random();
+                    Thread.sleep((ra.nextInt(8) + 1) * 1000);
                     System.out.println("result  " + String.valueOf(myOperation.getResult()));
                 }
             } catch (IOException e) {
@@ -169,6 +169,12 @@ class OperationFactory{
             case "/":
                 myOperation = new OperationDiv();
                 break;
+            case "a²":
+                myOperation = new OperationSquare();
+                break;
+            case "√":
+                myOperation = new OperationSqrt();
+                break;
         }
         return myOperation;
     }
@@ -236,6 +242,36 @@ class OperationDiv extends MyOperation{
     public double getResult() {
         double result = 0;
         result = getNum_A() / getNum_B();
+        return result;
+    }
+}
+
+class OperationSqrt extends MyOperation{
+
+    @Override
+    public double getResult() {
+        double result = 0;
+        result = Math.sqrt(getNum_A());
+        return result;
+    }
+}
+
+class OperationCube extends MyOperation{
+
+    @Override
+    public double getResult() {
+        double result = 0;
+        result = Math.sqrt(getNum_A());
+        return result;
+    }
+}
+
+class OperationSquare extends MyOperation{
+
+    @Override
+    public double getResult() {
+        double result = 0;
+        result = Math.pow(getNum_A(), 2);
         return result;
     }
 }
