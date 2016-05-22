@@ -97,11 +97,9 @@ public class Server {
                         lock.lock();
                         try {
                             for (Map.Entry<String, String> entry : tasks.entrySet()) {
-                                int count = 0;
                                 System.out.println("当前key= " + entry.getKey() + " and value= " + entry.getValue());
                                 if (entry.getValue().equals("n")) {
                                     userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
-                                    count ++;
                                     break;
                                 }
                             }

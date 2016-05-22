@@ -54,6 +54,7 @@ public class Client {
                     clientInit.sendResult(buildResult(getMethod(data)));
                     Random ra =new Random();
                     Thread.sleep((ra.nextInt(8) + 1) * 1000);
+                    Thread.sleep(3000);
                     System.out.println("result  " + String.valueOf(myOperation.getResult()));
                 }
             } catch (IOException e) {
