@@ -1,8 +1,6 @@
 import java.io.*;
 import java.net.*;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,7 +10,14 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by zsc on 2016/5/20.
  */
 public class Server {
-    private static Map<String, String> tasks = new HashMap<>();
+    private static Map<Data, String> tasks = new HashMap<>();
+    private static Data data1 = new Data();
+    private static Data data2 = new Data();
+    private static Data data3 = new Data();
+    private static Data data4 = new Data();
+    private static Data data5 = new Data();
+    private static Data data6 = new Data();
+
     private Lock lock = new ReentrantLock();
     public static void main(String[] args) {
         initMap();
@@ -20,12 +25,19 @@ public class Server {
     }
 
     private static void initMap(){
-        tasks.put("+", "n");
-        tasks.put("-", "n");
-        tasks.put("*", "n");
-        tasks.put("/", "n");
-        tasks.put("a²", "n");
-        tasks.put("√", "n");
+        data1.setMethod("+");
+        data2.setMethod("-");
+        data3.setMethod("*");
+        data4.setMethod("/");
+        data5.setMethod("a²");
+        data6.setMethod("√");
+
+        tasks.put(data1, "n");
+        tasks.put(data2, "n");
+        tasks.put(data3, "n");
+        tasks.put(data4, "n");
+        tasks.put(data5, "n");
+        tasks.put(data6, "n");
 
     }
 
@@ -33,12 +45,12 @@ public class Server {
     class ServerStart implements Runnable {
         private ServerSocket serverSocket = null;
         private UserClient dataClient;
-        private UserClient resultClient;
+        private UserClientObject resultClient;
         private boolean start = false;
 
         public void run() {
             try {
-                serverSocket = new ServerSocket(30002);
+                serverSocket = new ServerSocket(7777);
                 start = true;
             } catch (BindException e) {
                 System.out.println("端口使用中...");
@@ -49,9 +61,11 @@ public class Server {
             try {
                 while (start) {
                     Socket dataSocket = serverSocket.accept();
+                    System.out.println("一");
                     Socket resultSocket = serverSocket.accept();
+                    System.out.println("二");
                     dataClient = new UserClient(dataSocket);
-                    resultClient = new UserClient(resultSocket);
+                    resultClient = new UserClientObject(resultSocket);
                     ReceiveMsg receiveMsg = new ReceiveMsg(dataClient);
                     ReceiveResult receiveResult = new ReceiveResult(resultClient);
                     System.out.println("一个客户端已连接！");
@@ -76,6 +90,7 @@ public class Server {
     class ReceiveMsg implements Runnable {
         private boolean isConnected = false;
         private UserClient userClient;
+        private UserClientObject userClientObject;
         private String dataFromClient = "";
 
 
@@ -92,17 +107,31 @@ public class Server {
         public void run() {
             try {
                 while (isConnected) {
-                    dataFromClient = userClient.receiveData();
+                    dataFromClient = userClient.receiveReady();
                     if (dataFromClient.equals("Ready")) {
                         lock.lock();
                         try {
-                            for (Map.Entry<String, String> entry : tasks.entrySet()) {
-                                System.out.println("当前key= " + entry.getKey() + " and value= " + entry.getValue());
-                                if (entry.getValue().equals("n")) {
-                                    userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
-                                    break;
-                                }
-                            }
+//                            for (Data key : tasks.keySet()) {
+//                                System.out.println("当前key= " + key.getMethod() + " and value= " + tasks.get(key));
+//                                if (tasks.get(key).equals("n")) {
+//                                    System.out.println("还有");
+//                                    userClientObject.sendObject(key);
+////                                    userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
+//                                    break;
+//                                }
+//                            }
+//                            for (Map.Entry<Data, String> entry : tasks.entrySet()) {
+//                                System.out.println("当前key= " + entry.getKey().getMethod() + " and value= " + entry.getValue());
+//                                if (entry.getValue().equals("n")) {
+//                                    System.out.println("还有");
+//                                    userClientObject.sendObject(entry.getKey());
+////                                    userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
+//                                    break;
+//                                }
+//                            }
+                            Data data = new Data();
+                            data.setMethod("+");
+                            userClientObject.sendObject(data);
                         } finally {
                             lock.unlock();
                         }
@@ -117,24 +146,22 @@ public class Server {
 
     class ReceiveResult implements Runnable {
         private boolean isConnected = false;
-        private UserClient userClient;
-        private String dataFromClient = "";
+        private UserClientObject userClientObject;
+        private Data dataFromClient;
 
 
-        ReceiveResult(UserClient userClient) {
-            this.userClient = userClient;
+        ReceiveResult(UserClientObject userClientObject) {
+            this.userClientObject= userClientObject;
             isConnected = true;
         }
 
-        public void updateMap(String str){
-            String DELIMITER = "\f\r";
-            List<String> data = Arrays.asList(str.split(DELIMITER));
+        public void updateMap(Data data){
             lock.lock();
             try {
-                tasks.put(data.get(0), data.get(1));
+                tasks.put(data, "y");
                 System.out.println("更新后");
-                for (Map.Entry<String, String> entry : tasks.entrySet()) {
-                    System.out.println("key= " + entry.getKey() + " and value= " + entry.getValue());
+                for (Map.Entry<Data, String> entry : tasks.entrySet()) {
+                    System.out.println("key= " + entry.getKey().getResult() + " and value= " + entry.getValue());
                 }
             } finally {
                 lock.unlock();
@@ -143,15 +170,19 @@ public class Server {
 
         @Override
         public void run() {
+
             try {
                 while (isConnected) {
-                    dataFromClient = userClient.receiveData();
+                    dataFromClient = (Data)userClientObject.receiveObject();
                     updateMap(dataFromClient);
-
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
+
+
         }
 
     }
@@ -188,7 +219,63 @@ class UserClient {
         dosWithClient.writeUTF(str);
     }
 
-    public String receiveData() throws IOException {
+    public String receiveReady() throws IOException {
         return disWithClient.readUTF();
+    }
+}
+
+class UserClientObject {
+    private Socket socket = null;
+    private ObjectInputStream disWithClient;
+    private ObjectOutputStream dosWithClient;
+
+    public UserClientObject(Socket socket) {
+        this.socket = socket;
+        try {
+            dosWithClient = new ObjectOutputStream(socket.getOutputStream());
+            disWithClient = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+//    public void close() throws IOException {
+//        try {
+//            if (disWithClient != null) disWithClient.close();
+//            if (socket != null) socket.close();
+//            if (dosWithClient != null) dosWithClient.close();
+//        } catch (IOException e1) {
+//            e1.printStackTrace();
+//        }
+//    }
+
+    public void sendObject(Data data) throws IOException {
+        dosWithClient.writeObject(data);
+        dosWithClient.flush();
+    }
+
+    public Object receiveObject() throws IOException, ClassNotFoundException {
+        return disWithClient.readObject();
+    }
+}
+
+class Data implements Serializable{
+    private String method;
+    private String result;
+
+    public String getMethod() {
+        return method;
+    }
+
+    public void setMethod(String method) {
+        this.method = method;
+    }
+
+    public String getResult() {
+        return result;
+    }
+
+    public void setResult(String result) {
+        this.result = result;
     }
 }

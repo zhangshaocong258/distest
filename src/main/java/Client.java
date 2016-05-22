@@ -9,18 +9,19 @@ import java.util.Random;
  */
 public class Client {
     private ClientInit clientInit = new ClientInit();
+
     public static void main(String[] args) {
         Client client = new Client();
         client.startConnect();
         new Thread(client.new ReceiveServerMsg()).start();
     }
 
-    public void startConnect(){
+    public void startConnect() {
         clientInit.connectWithServer();
         System.out.println("连接");
     }
 
-    public void sendReady(){
+    public void sendReady() {
         try {
             clientInit.sendMsg("Ready");
         } catch (IOException e) {
@@ -28,56 +29,63 @@ public class Client {
         }
     }
 
-    public String getMethod(String str){
-        String DELIMITER = "\f\r";
-        List<String> data = Arrays.asList(str.split(DELIMITER));
-        return data.get(0);
+    public String getMethod(Data data) {
+        return data.getMethod();
     }
 
-    public String buildResult(String str){
+    public String buildResult(String str) {
         String DELIMITER = "\f\r";
         return str + DELIMITER + "y";
     }
 
     class ReceiveServerMsg implements Runnable {
-        String data = "";
+        //        String data = "";
+        Data data;
         MyOperation myOperation;
 
         @Override
         public void run() {
+
             try {
                 while (true) {
                     sendReady();//先发送Ready
-                    data = clientInit.receiveMsg();
+                    data = (Data) clientInit.receiveData();
                     System.out.println("method " + getMethod(data));
                     myOperation = OperationFactory.CreateOperation(getMethod(data));
-                    clientInit.sendResult(buildResult(getMethod(data)));
-                    Random ra =new Random();
+                    data.setResult(String.valueOf(myOperation.getResult()));
+                    clientInit.sendResult(data);
+                    Random ra = new Random();
                     Thread.sleep((ra.nextInt(8) + 1) * 1000);
                     Thread.sleep(3000);
                     System.out.println("result  " + String.valueOf(myOperation.getResult()));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
         }
     }
 }
 
-class ClientInit{
+class ClientInit {
     private ClientConnectServer clientConnectServerMsg = new ClientConnectServer();
-    private ClientConnectServer clientConnectServerResult = new ClientConnectServer();
+    private ClientConnectServerObject clientConnectServerObject = new ClientConnectServerObject();
 
-    public void connectWithServer(){
+    public void connectWithServer() {
         clientConnectServerMsg.connectServer();
-        clientConnectServerResult.connectServer();
+        System.out.println("1yilianjie");
+        clientConnectServerObject.connectServer2();
+        System.out.println("2yilianjie");
+
     }
 
     //发送结果
-    public void sendResult(String str) throws IOException {
-        clientConnectServerResult.getDosWithServer().writeUTF(str);
+    public void sendResult(Data data) throws IOException {
+        clientConnectServerObject.getDosWithServer().writeObject(data);
     }
 
     //发送Ready信息
@@ -86,20 +94,20 @@ class ClientInit{
     }
 
     //接收执行指令
-    public String receiveMsg() throws IOException {
-        return clientConnectServerMsg.getDisWithServer().readUTF();
+    public Object receiveData() throws IOException, ClassNotFoundException {
+        return clientConnectServerObject.getDisWithServer().readObject();
     }
 }
 
 class ClientConnectServer {
-    private IOUtil ioUtil = new IOUtil();
+    private DataIO dataIO = new DataIO();
 
     public void connectServer() {
         try {
-            ioUtil.setSocket(new Socket("127.0.0.1", 30002));
-            ioUtil.setDataInputStream(new DataInputStream(ioUtil.getSocket().getInputStream()));
-            ioUtil.setDataOutputStream(new DataOutputStream(ioUtil.getSocket().getOutputStream()));
-            System.out.println("客户端已连接");
+            dataIO.setSocket(new Socket("127.0.0.1", 7777));
+            dataIO.setDataInputStream(new DataInputStream(dataIO.getSocket().getInputStream()));
+            dataIO.setDataOutputStream(new DataOutputStream(dataIO.getSocket().getOutputStream()));
+            System.out.println("客户端已连接1");
         } catch (UnknownHostException e) {
             System.out.println("服务端未启动");
             e.printStackTrace();
@@ -111,20 +119,58 @@ class ClientConnectServer {
     }
 
     public Socket getClientSocket() {
-        return ioUtil.getSocket();
+        return dataIO.getSocket();
     }
 
     public DataInputStream getDisWithServer() {
-        return ioUtil.getDataInputStream();
+        return dataIO.getDataInputStream();
     }
 
     public DataOutputStream getDosWithServer() {
-        return ioUtil.getDataOutputStream();
+        return dataIO.getDataOutputStream();
     }
 
 }
 
-class IOUtil {
+class ClientConnectServerObject {
+    private ObjectIO objectIO = new ObjectIO();
+
+    public void connectServer2() {
+        try {
+            objectIO.setSocket(new Socket("127.0.0.1", 7777));
+            System.out.println("1");
+            objectIO.setObjectInputStream(new ObjectInputStream(objectIO.getSocket().getInputStream()));
+            objectIO.setObjectOutputStream(new ObjectOutputStream(objectIO.getSocket().getOutputStream()));
+            System.out.println("2");
+
+            System.out.println("3");
+
+            System.out.println("客户端已连接2");
+        } catch (UnknownHostException e) {
+            System.out.println("服务端未启动");
+            e.printStackTrace();
+        } catch (IOException e) {
+            System.out.println("服务端未启动");
+            System.exit(1);
+            e.printStackTrace();
+        }
+    }
+
+    public Socket getClientSocket() {
+        return objectIO.getSocket();
+    }
+
+    public ObjectInputStream getDisWithServer() {
+        return objectIO.getObjectInputStream();
+    }
+
+    public ObjectOutputStream getDosWithServer() {
+        return objectIO.getObjectOutputStream();
+    }
+
+}
+
+class DataIO {
     private Socket socket = null;
     private DataInputStream dataInputStream = null;
     private DataOutputStream dataOutputStream = null;
@@ -154,7 +200,37 @@ class IOUtil {
     }
 }
 
-class OperationFactory{
+class ObjectIO {
+    private Socket socket = null;
+    private ObjectInputStream objectInputStream = null;
+    private ObjectOutputStream objectOutputStream = null;
+
+    public ObjectInputStream getObjectInputStream() {
+        return objectInputStream;
+    }
+
+    public void setObjectInputStream(ObjectInputStream objectInputStream) {
+        this.objectInputStream = objectInputStream;
+    }
+
+    public ObjectOutputStream getObjectOutputStream() {
+        return objectOutputStream;
+    }
+
+    public void setObjectOutputStream(ObjectOutputStream objectOutputStream) {
+        this.objectOutputStream = objectOutputStream;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
+}
+
+class OperationFactory {
     public static MyOperation CreateOperation(String operate) {
         MyOperation myOperation = null;
         switch (operate) {
@@ -181,7 +257,7 @@ class OperationFactory{
     }
 }
 
-class MyOperation{
+class MyOperation {
     private double num_A = 6;
     private double num_B = 5;
 
@@ -201,13 +277,13 @@ class MyOperation{
         this.num_B = num_B;
     }
 
-    public double getResult(){
+    public double getResult() {
         double result = 0;
         return result;
     }
 }
 
-class OperationAdd extends MyOperation{
+class OperationAdd extends MyOperation {
 
     @Override
     public double getResult() {
@@ -217,7 +293,7 @@ class OperationAdd extends MyOperation{
     }
 }
 
-class OperationSub extends MyOperation{
+class OperationSub extends MyOperation {
 
     @Override
     public double getResult() {
@@ -227,7 +303,7 @@ class OperationSub extends MyOperation{
     }
 }
 
-class OperationMul extends MyOperation{
+class OperationMul extends MyOperation {
 
     @Override
     public double getResult() {
@@ -237,7 +313,7 @@ class OperationMul extends MyOperation{
     }
 }
 
-class OperationDiv extends MyOperation{
+class OperationDiv extends MyOperation {
 
     @Override
     public double getResult() {
@@ -247,7 +323,7 @@ class OperationDiv extends MyOperation{
     }
 }
 
-class OperationSqrt extends MyOperation{
+class OperationSqrt extends MyOperation {
 
     @Override
     public double getResult() {
@@ -257,7 +333,7 @@ class OperationSqrt extends MyOperation{
     }
 }
 
-class OperationCube extends MyOperation{
+class OperationCube extends MyOperation {
 
     @Override
     public double getResult() {
@@ -267,7 +343,7 @@ class OperationCube extends MyOperation{
     }
 }
 
-class OperationSquare extends MyOperation{
+class OperationSquare extends MyOperation {
 
     @Override
     public double getResult() {
