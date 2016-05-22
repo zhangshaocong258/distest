@@ -55,8 +55,8 @@ public class Client {
                     data.setResult(String.valueOf(myOperation.getResult()));
                     clientInit.sendResult(data);
                     Random ra = new Random();
-                    Thread.sleep((ra.nextInt(8) + 1) * 1000);
-                    Thread.sleep(3000);
+//                    Thread.sleep((ra.nextInt(8) + 1) * 1000);
+                    Thread.sleep(300);
                     System.out.println("result  " + String.valueOf(myOperation.getResult()));
                 }
             } catch (IOException e) {
@@ -77,9 +77,7 @@ class ClientInit {
 
     public void connectWithServer() {
         clientConnectServerMsg.connectServer();
-        System.out.println("1yilianjie");
         clientConnectServerObject.connectServer2();
-        System.out.println("2yilianjie");
 
     }
 
@@ -138,13 +136,8 @@ class ClientConnectServerObject {
     public void connectServer2() {
         try {
             objectIO.setSocket(new Socket("127.0.0.1", 7777));
-            System.out.println("1");
             objectIO.setObjectInputStream(new ObjectInputStream(objectIO.getSocket().getInputStream()));
             objectIO.setObjectOutputStream(new ObjectOutputStream(objectIO.getSocket().getOutputStream()));
-            System.out.println("2");
-
-            System.out.println("3");
-
             System.out.println("客户端已连接2");
         } catch (UnknownHostException e) {
             System.out.println("服务端未启动");

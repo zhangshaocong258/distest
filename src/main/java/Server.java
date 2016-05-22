@@ -10,13 +10,13 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by zsc on 2016/5/20.
  */
 public class Server {
-    private static Map<Data, String> tasks = new HashMap<>();
-    private static Data data1 = new Data();
-    private static Data data2 = new Data();
-    private static Data data3 = new Data();
-    private static Data data4 = new Data();
-    private static Data data5 = new Data();
-    private static Data data6 = new Data();
+    private final static Map<Data, String> tasks = new HashMap<>();
+    private final static Data data1 = new Data();
+    private final static Data data2 = new Data();
+    private final static Data data3 = new Data();
+    private final static Data data4 = new Data();
+    private final static Data data5 = new Data();
+    private final static Data data6 = new Data();
 
     private Lock lock = new ReentrantLock();
     public static void main(String[] args) {
@@ -61,12 +61,10 @@ public class Server {
             try {
                 while (start) {
                     Socket dataSocket = serverSocket.accept();
-                    System.out.println("一");
                     Socket resultSocket = serverSocket.accept();
-                    System.out.println("二");
                     dataClient = new UserClient(dataSocket);
                     resultClient = new UserClientObject(resultSocket);
-                    ReceiveMsg receiveMsg = new ReceiveMsg(dataClient);
+                    ReceiveMsg receiveMsg = new ReceiveMsg(dataClient, resultClient);
                     ReceiveResult receiveResult = new ReceiveResult(resultClient);
                     System.out.println("一个客户端已连接！");
                     new Thread(receiveMsg).start();
@@ -94,8 +92,9 @@ public class Server {
         private String dataFromClient = "";
 
 
-        ReceiveMsg(UserClient userClient) {
+        ReceiveMsg(UserClient userClient, UserClientObject userClientObject) {
             this.userClient = userClient;
+            this.userClientObject = userClientObject;
             isConnected = true;
         }
 
@@ -111,27 +110,15 @@ public class Server {
                     if (dataFromClient.equals("Ready")) {
                         lock.lock();
                         try {
-//                            for (Data key : tasks.keySet()) {
-//                                System.out.println("当前key= " + key.getMethod() + " and value= " + tasks.get(key));
-//                                if (tasks.get(key).equals("n")) {
-//                                    System.out.println("还有");
-//                                    userClientObject.sendObject(key);
-////                                    userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
-//                                    break;
-//                                }
-//                            }
-//                            for (Map.Entry<Data, String> entry : tasks.entrySet()) {
-//                                System.out.println("当前key= " + entry.getKey().getMethod() + " and value= " + entry.getValue());
-//                                if (entry.getValue().equals("n")) {
-//                                    System.out.println("还有");
-//                                    userClientObject.sendObject(entry.getKey());
-////                                    userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
-//                                    break;
-//                                }
-//                            }
-                            Data data = new Data();
-                            data.setMethod("+");
-                            userClientObject.sendObject(data);
+                            for (Map.Entry<Data, String> entry : tasks.entrySet()) {
+                                System.out.println("当前key= " + entry.getKey().getMethod() + " and value= " + entry.getValue());
+                                if (entry.getValue().equals("n")) {
+                                    System.out.println("还有");
+                                    userClientObject.sendObject(entry.getKey());
+//                                    userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
+                                    break;
+                                }
+                            }
                         } finally {
                             lock.unlock();
                         }
@@ -161,7 +148,7 @@ public class Server {
                 tasks.put(data, "y");
                 System.out.println("更新后");
                 for (Map.Entry<Data, String> entry : tasks.entrySet()) {
-                    System.out.println("key= " + entry.getKey().getResult() + " and value= " + entry.getValue());
+                    System.out.println("key= " + entry.getKey().getMethod() + " and value= " + entry.getValue());
                 }
             } finally {
                 lock.unlock();
