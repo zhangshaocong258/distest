@@ -111,9 +111,9 @@ public class Server {
                         lock.lock();
                         try {
                             for (Map.Entry<Data, String> entry : tasks.entrySet()) {
-                                System.out.println("当前key= " + entry.getKey().getMethod() + " and value= " + entry.getValue());
+                                System.out.println("当前key= " + entry.getKey().getMethod() + "result " +
+                                        entry.getKey().getDataResult() + " and value= " + entry.getValue());
                                 if (entry.getValue().equals("n")) {
-                                    System.out.println("还有");
                                     userClientObject.sendObject(entry.getKey());
 //                                    userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
                                     break;
@@ -145,26 +145,13 @@ public class Server {
         public void updateMap(Data data){
             lock.lock();
             try {
-                System.out.println("结果是 " + data.getDataResult());
-                lists.add(data);
-                System.out.println("lists" + lists.size());
-                for (int i = 0; i < lists.size(); i++) {
-                    System.out.println("list结果 " + lists.get(i).getDataResult());
-                }
+                tasks.remove(data);
                 tasks.put(data, "y");
-                System.out.println("更新后");
 
                 for (Map.Entry<Data, String> entry : tasks.entrySet()) {
-                    System.out.println("key= " + entry.getKey().getMethod() + " 结果 " + entry.getKey().getDataResult() + " and value= " + entry.getValue());
+                    System.out.println("key= " + entry.getKey().getMethod() + " 结果 " +
+                            entry.getKey().getDataResult() + " and value= " + entry.getValue());
                 }
-
-//                Iterator<Map.Entry<Data, String>> it = tasks.entrySet().iterator();
-//                while (it.hasNext()) {
-//                    Map.Entry<Data, String> entry = it.next();
-//                    if (entry.getKey().equals(data)) {
-//                        tasks.put(data, "y");
-//                    }
-//                }
             } finally {
                 lock.unlock();
             }
@@ -263,7 +250,7 @@ class UserClientObject {
 
 class Data implements Serializable{
     private String method = "";
-    private String dataResult = "";
+    private String dataResult = "a";
 
     public String getMethod() {
         return method;
@@ -292,8 +279,9 @@ class Data implements Serializable{
 
     @Override
     public int hashCode() {
+        final int prime = 31;
         int result = 1;
-        result = result * 31 + ((method == null) ? 0 : method.hashCode());
+        result = prime * result + ((method == null) ? 0 : method.hashCode());
 //        result = result * 31 + ((dataResult == null) ? 0 : dataResult.hashCode());
         return result;
     }
