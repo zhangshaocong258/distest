@@ -10,7 +10,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Server {
     private final static Map<Data, String> tasks = new HashMap<>();
-    private final static List<Data> lists = new ArrayList<>();
     private final static Data data1 = new Data();
     private final static Data data2 = new Data();
     private final static Data data3 = new Data();
@@ -24,6 +23,7 @@ public class Server {
         new Thread(new Server().new ServerStart()).start();
     }
 
+    //将所有data放到map中
     private static void initMap(){
         data1.setMethod("+");
         data2.setMethod("-");
@@ -60,16 +60,15 @@ public class Server {
             }
             try {
                 while (start) {
-                    Socket dataSocket = serverSocket.accept();
-                    Socket resultSocket = serverSocket.accept();
+                    Socket dataSocket = serverSocket.accept();//接收dataoutputstream
+                    Socket resultSocket = serverSocket.accept();//接收objectoutputstream
                     dataClient = new UserClient(dataSocket);
                     resultClient = new UserClientObject(resultSocket);
-                    ReceiveMsg receiveMsg = new ReceiveMsg(dataClient, resultClient);
-                    ReceiveResult receiveResult = new ReceiveResult(resultClient);
+                    ReceiveMsg receiveMsg = new ReceiveMsg(dataClient, resultClient);//连接
+                    ReceiveResult receiveResult = new ReceiveResult(resultClient);//连接
                     System.out.println("一个客户端已连接！");
-                    new Thread(receiveMsg).start();
-                    new Thread(receiveResult).start();
-
+                    new Thread(receiveMsg).start();//启动线程
+                    new Thread(receiveResult).start();//启动线程
                 }
             } catch (IOException e) {
                 System.out.println("服务端错误位置");
@@ -85,12 +84,12 @@ public class Server {
         }
     }
 
+    //接收dataoutputstream的封装
     class ReceiveMsg implements Runnable {
         private boolean isConnected = false;
         private UserClient userClient;
         private UserClientObject userClientObject;
         private String dataFromClient = "";
-
 
         ReceiveMsg(UserClient userClient, UserClientObject userClientObject) {
             this.userClient = userClient;
@@ -98,24 +97,20 @@ public class Server {
             isConnected = true;
         }
 
-        public String buildStr(String key, String value){
-            String DELIMITER = "\f\r";
-            return key + DELIMITER + value;
-        }
-
         public void run() {
             try {
                 while (isConnected) {
-                    dataFromClient = userClient.receiveReady();
+                    dataFromClient = userClient.receiveReady();//接收Ready
                     if (dataFromClient.equals("Ready")) {
+                        //线程加锁，防止其他线程调用Map
                         lock.lock();
                         try {
+                            //找到没有完成的任务
                             for (Map.Entry<Data, String> entry : tasks.entrySet()) {
                                 System.out.println("当前key= " + entry.getKey().getMethod() + "result " +
                                         entry.getKey().getDataResult() + " and value= " + entry.getValue());
                                 if (entry.getValue().equals("n")) {
                                     userClientObject.sendObject(entry.getKey());
-//                                    userClient.sendData(buildStr(entry.getKey(), entry.getValue()));
                                     break;
                                 }
                             }
@@ -131,11 +126,11 @@ public class Server {
         }
     }
 
+    //接收objectoutputstream的封装
     class ReceiveResult implements Runnable {
         private boolean isConnected = false;
         private UserClientObject userClientObject;
         private Data dataFromClient;
-
 
         ReceiveResult(UserClientObject userClientObject) {
             this.userClientObject= userClientObject;
@@ -143,10 +138,11 @@ public class Server {
         }
 
         public void updateMap(Data data){
+            //map加锁
             lock.lock();
             try {
                 tasks.remove(data);
-                tasks.put(data, "y");
+                tasks.put(data, "y");//更新标记，表示完成
 
                 for (Map.Entry<Data, String> entry : tasks.entrySet()) {
                     System.out.println("key= " + entry.getKey().getMethod() + " 结果 " +
@@ -159,11 +155,11 @@ public class Server {
 
         @Override
         public void run() {
-
             try {
+                //接收任务完成后得到的结果
                 while (isConnected) {
                     dataFromClient = (Data)userClientObject.receiveObject();
-                    updateMap(dataFromClient);
+                    updateMap(dataFromClient);//更新状态
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -248,9 +244,10 @@ class UserClientObject {
     }
 }
 
+//任务类，重写equals和hashcode
 class Data implements Serializable{
     private String method = "";
-    private String dataResult = "a";
+    private String dataResult = "";
 
     public String getMethod() {
         return method;

@@ -14,11 +14,13 @@ public class Client {
         new Thread(client.new ReceiveServerMsg()).start();
     }
 
+    //连接服务端
     public void startConnect() {
         clientInit.connectWithServer();
         System.out.println("连接");
     }
 
+    //发送ready，表示准备就绪，当前无任务执行
     public void sendReady() {
         try {
             clientInit.sendMsg("Ready");
@@ -27,17 +29,13 @@ public class Client {
         }
     }
 
+    //获取要完成是哪个任务
     public String getMethod(Data data) {
         return data.getMethod();
     }
 
-    public String buildResult(String str) {
-        String DELIMITER = "\f\r";
-        return str + DELIMITER + "y";
-    }
-
+    //接收信息封装
     class ReceiveServerMsg implements Runnable {
-        //        String data = "";
         Data data;
         MyOperation myOperation;
 
@@ -47,14 +45,17 @@ public class Client {
             try {
                 while (true) {
                     sendReady();//先发送Ready
-                    data = (Data) clientInit.receiveData();
+                    data = (Data) clientInit.receiveData();//收到要完成的任务class
                     System.out.println("method " + getMethod(data));
-                    myOperation = OperationFactory.CreateOperation(getMethod(data));
-                    data.setDataResult(String.valueOf(myOperation.getResult()));
-                    clientInit.sendResult(data);
+
+                    myOperation = OperationFactory.CreateOperation(getMethod(data));//执行任务
+                    data.setDataResult(String.valueOf(myOperation.getResult()));//写入结果
+                    clientInit.sendResult(data);//将结果发送回去
+                    //线程等待
                     Random ra = new Random();
-//                    Thread.sleep((ra.nextInt(8) + 1) * 1000);
-                    Thread.sleep(300);
+                    Thread.sleep((ra.nextInt(8) + 1) * 1000);
+                    Thread.sleep(3000);
+
                     System.out.println("result  " + String.valueOf(myOperation.getResult()));
                 }
             } catch (IOException e) {
@@ -69,6 +70,7 @@ public class Client {
     }
 }
 
+//初始化连接
 class ClientInit {
     private ClientConnectServer clientConnectServerMsg = new ClientConnectServer();
     private ClientConnectServerObject clientConnectServerObject = new ClientConnectServerObject();
@@ -95,6 +97,7 @@ class ClientInit {
     }
 }
 
+//客户端连接类DataInputStream
 class ClientConnectServer {
     private DataIO dataIO = new DataIO();
 
@@ -128,6 +131,7 @@ class ClientConnectServer {
 
 }
 
+//客户端连接类ObjectInputStream
 class ClientConnectServerObject {
     private ObjectIO objectIO = new ObjectIO();
 
@@ -221,6 +225,8 @@ class ObjectIO {
     }
 }
 
+
+//要完成的任务
 class OperationFactory {
     public static MyOperation CreateOperation(String operate) {
         MyOperation myOperation = null;
