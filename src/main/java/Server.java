@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -11,6 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Server {
     private final static Map<Data, String> tasks = new HashMap<>();
+    private final static List<Data> lists = new ArrayList<>();
     private final static Data data1 = new Data();
     private final static Data data2 = new Data();
     private final static Data data3 = new Data();
@@ -145,11 +145,26 @@ public class Server {
         public void updateMap(Data data){
             lock.lock();
             try {
+                System.out.println("结果是 " + data.getDataResult());
+                lists.add(data);
+                System.out.println("lists" + lists.size());
+                for (int i = 0; i < lists.size(); i++) {
+                    System.out.println("list结果 " + lists.get(i).getDataResult());
+                }
                 tasks.put(data, "y");
                 System.out.println("更新后");
+
                 for (Map.Entry<Data, String> entry : tasks.entrySet()) {
-                    System.out.println("key= " + entry.getKey().getMethod() + " and value= " + entry.getValue());
+                    System.out.println("key= " + entry.getKey().getMethod() + " 结果 " + entry.getKey().getDataResult() + " and value= " + entry.getValue());
                 }
+
+//                Iterator<Map.Entry<Data, String>> it = tasks.entrySet().iterator();
+//                while (it.hasNext()) {
+//                    Map.Entry<Data, String> entry = it.next();
+//                    if (entry.getKey().equals(data)) {
+//                        tasks.put(data, "y");
+//                    }
+//                }
             } finally {
                 lock.unlock();
             }
@@ -247,8 +262,8 @@ class UserClientObject {
 }
 
 class Data implements Serializable{
-    private String method;
-    private String result;
+    private String method = "";
+    private String dataResult = "";
 
     public String getMethod() {
         return method;
@@ -258,11 +273,30 @@ class Data implements Serializable{
         this.method = method;
     }
 
-    public String getResult() {
+    public String getDataResult() {
+        return dataResult;
+    }
+
+    public void setDataResult(String dataResult) {
+        this.dataResult = dataResult;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Data)){
+            return false;
+        }
+        Data data = (Data) o;
+        return data.getMethod().equals(method);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 1;
+        result = result * 31 + ((method == null) ? 0 : method.hashCode());
+//        result = result * 31 + ((dataResult == null) ? 0 : dataResult.hashCode());
         return result;
     }
 
-    public void setResult(String result) {
-        this.result = result;
-    }
+
 }

@@ -1,7 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -52,7 +50,7 @@ public class Client {
                     data = (Data) clientInit.receiveData();
                     System.out.println("method " + getMethod(data));
                     myOperation = OperationFactory.CreateOperation(getMethod(data));
-                    data.setResult(String.valueOf(myOperation.getResult()));
+                    data.setDataResult(String.valueOf(myOperation.getResult()));
                     clientInit.sendResult(data);
                     Random ra = new Random();
 //                    Thread.sleep((ra.nextInt(8) + 1) * 1000);
